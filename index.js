@@ -2,9 +2,10 @@ const express = require('express');
 const app = express();
 const scrape = require('./src/service/scraping');
 
-app.get('/', async (req, res) => {
+app.get('/search/:name', async (req, res) => {
+    const { name } = req.params
     try {
-        res.json(await scrape()
+        res.json(await scrape(name)
             .then((res) => res)
             .catch(err => console.log(err)));
     } catch (error) {
@@ -12,4 +13,4 @@ app.get('/', async (req, res) => {
     }
 });
 
-app.listen(3020, () => console.log('listening on port 3020')); 
+app.listen(3000, () => console.log('listening ...')); 
