@@ -1,20 +1,21 @@
 const puppeteer = require('puppeteer');
 
-const scrape = async () => {
+const scrape = async (name) => {
     const data = [];
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
 
     await page.goto('http://buscatextual.cnpq.br/buscatextual/busca.do?metodo=apresentar');
     await page.waitForSelector('input[id=textoBusca]');
-    await page.type('input[id=textoBusca]', 'Richard');
+    await page.type('input[id=textoBusca]', name);
     await page.click('a[id=botaoBuscaFiltros]');
     await page.waitForSelector('div.resultado');
 
     const paginated = await page.$$eval('a[data-role=paginacao]', links => links.map(link => link.href));
+    // console.log(paginated.length)
+    // console.log(paginated)
     
-    // acessar href de 'proximas' e atualizar a paginação
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < paginated.length/2; i++) {
         await page.goto(paginated[i], { waitUntil: "load" });
         
         const persons = await page.evaluate(() => {
