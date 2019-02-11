@@ -1,13 +1,21 @@
 const puppeteer = require('puppeteer');
 
-const scrape = async (name) => {
-    const data = [];
+const scrape = async (search) => {
+    const persons = [];
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
 
     await page.goto('http://buscatextual.cnpq.br/buscatextual/busca.do?metodo=apresentar');
+
+    // if true search by subject (title or key word); if false search only by name
+    !search.byName && await page.click('input[id=buscaAssunto]');
+
     await page.waitForSelector('input[id=textoBusca]');
-    await page.type('input[id=textoBusca]', name);
+    await page.type('input[id=textoBusca]', search.term);
+    
+    // if true search in all bases; if false search only PhDs
+    !search.onlyPhd && await page.click('input[id=buscarDemais]');
+    
     await page.click('a[id=botaoBuscaFiltros]');
     await page.waitForSelector('div.resultado');
 
@@ -18,59 +26,65 @@ const scrape = async (name) => {
     // console.log(referenceURL);
     
     if (referenceURL) {
-        const targetL = await _generateLinks(referenceURL, ~~numRegisters);
-        // console.log(targetL);
-
-        if (~~numRegisters <= 100) {
-
-            await page.goto(referenceURL.replace('registros=0;10', `registros=0;${numRegisters}`), { waitUntil: "load" });
-            data.push(await _content(page));
         
-        } else {
-            
-            for (let i = 0; i < targetL.length; i++) {
-                await page.goto(targetL[i], { waitUntil: "load" });
-                data.push(await _content(page)); 
-            };
+        const targetList = await _generateLinks(referenceURL, ~~numRegisters);
 
-        }
+        await page.goto(targetList[0], { waitUntil: 'load' });
+        persons.push({ persons: await _content(page), pages: targetList });
 
     } else {
-        data.push(await _content(page))
+        persons.push(await _content(page));
     }
 
-    browser.close()
+    browser.close();
 
-    return data;
+    return persons;
 }
 
+const scrapeNextPage = async (url) => {
+    
+    const persons = [];
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
 
-_content = async (context) => {
+    await page.goto(url, { waitUntil: 'load' });
+    persons.push({ persons: await _content(page) });
+
+    browser.close();
+
+    return persons;
+
+}
+
+const _content = async (context) => {
         
     return await context.evaluate(() => {
         const nodeList = document.body.querySelectorAll('li');
-        return Array.from(nodeList).map(item => ({
-            name: item.querySelector('a').textContent,
-            country: item.contains(item.querySelector('img')) ? 
-                item.querySelector('img').getAttribute('alt') : '',
-            details: item.querySelector('a').getAttribute('href'),
-            resume: item.innerText
-        }));            
+        return Array.from(nodeList).map(item => {
+
+            const data = item.querySelector('a');
+            const href = data.getAttribute('href');
+            return {
+                name: data.textContent,
+                country: item.contains(item.querySelector('img')) ? 
+                    item.querySelector('img').getAttribute('alt') : '',
+                link: `http://buscatextual.cnpq.br/buscatextual/visualizacv.do?id=${ href.slice(24, href.indexOf(',')-1) }`,
+                resume: (item.innerText).split('\n').filter(Boolean)
+            };
+        });            
     });
 
 }
 
-_generateLinks = (referenceURL, numRegisters) => {
+const _generateLinks = (referenceURL, numRegisters) => {
     let result = [];
 
-    for (let x = 0; x < numRegisters; x+=10) {
+    for (let x = 0; x < numRegisters; x+=20) {
         // console.log('x: ', x);
-        x > 0 ? 
-        result.push(referenceURL.replace(`registros=0;10`, `registros=${ x };10`)) :
-        result.push(referenceURL);
+        result.push(referenceURL.replace(`registros=0;10`, `registros=${ x };20`));
     };
 
     return result;
 }
 
-module.exports = scrape;
+module.exports = { scrape, scrapeNextPage };
