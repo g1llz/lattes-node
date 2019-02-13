@@ -1,9 +1,7 @@
 const puppeteer = require('puppeteer');
 
-const scrape = async (search) => {
-    const persons = [];
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
+const scrape = async (search) => {   
+    const { page, browser } = await _init();
 
     await page.goto('http://buscatextual.cnpq.br/buscatextual/busca.do?metodo=apresentar');
 
@@ -17,43 +15,48 @@ const scrape = async (search) => {
     !search.onlyPhd && await page.click('input[id=buscarDemais]');
     
     await page.click('a[id=botaoBuscaFiltros]');
-    await page.waitForSelector('div.resultado');
+    await page.waitForSelector('div[class=resultado]');
 
     const numRegisters = await page.$eval('div.tit_form b', element => element.innerText);
     const referenceURL = await page.$$eval('a[data-role=paginacao]', links => links.map(link => link.href)[0]);
 
     // console.log(numRegisters);
     // console.log(referenceURL);
+    let result;
     
     if (referenceURL) {
-        
         const targetList = await _generateLinks(referenceURL, ~~numRegisters);
 
         await page.goto(targetList[0], { waitUntil: 'load' });
-        persons.push({ persons: await _content(page), pages: targetList });
-
+        result = { persons: await _content(page), pages: targetList };
+        
     } else {
-        persons.push(await _content(page));
+        result = { persons: await _content(page) };
     }
 
     browser.close();
 
-    return persons;
+    return result;
 }
 
 const scrapeNextPage = async (url) => {
-    
-    const persons = [];
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
+    // const persons = [];
+    const { page, browser } = await _init();
 
     await page.goto(url, { waitUntil: 'load' });
-    persons.push({ persons: await _content(page) });
+    let result = await _content(page);
 
     browser.close();
 
-    return persons;
+    return { persons: result };
 
+}
+
+const _init = async () => {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+
+    return { page, browser };
 }
 
 const _content = async (context) => {
