@@ -24,6 +24,11 @@ legend {
     background-color: #E2E2E2;
 }
 
+.active {
+    color: #28a745;
+    font-weight: 600;
+}
+
 /* LOADER */
 
 @-webkit-keyframes dyinglight {
