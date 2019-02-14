@@ -6,13 +6,13 @@ const scrape = async (search) => {
     await page.goto('http://buscatextual.cnpq.br/buscatextual/busca.do?metodo=apresentar');
 
     // if true search by subject (title or key word); if false search only by name
-    !search.byName && await page.click('input[id=buscaAssunto]');
+    search.searchFor == 2 && await page.click('input[id=buscaAssunto]');
 
     await page.waitForSelector('input[id=textoBusca]');
     await page.type('input[id=textoBusca]', search.term);
     
     // if true search in all bases; if false search only PhDs
-    !search.onlyPhd && await page.click('input[id=buscarDemais]');
+    search.whichBase == 2 && await page.click('input[id=buscarDemais]');
     
     await page.click('a[id=botaoBuscaFiltros]');
     await page.waitForSelector('div[class=resultado]');
