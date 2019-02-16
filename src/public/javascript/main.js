@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
     button.onclick = async (e) => {
         e.preventDefault();
 
+        // clear div '#paginator'
+        document.getElementById('paginator').innerHTML = '';
+
         _loader().show();
         _toTop();
 
