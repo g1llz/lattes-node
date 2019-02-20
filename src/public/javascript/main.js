@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let search = {
             term: term.value,
             searchFor: searchFor,
-            whichBase: whichBase
+            whichBase: whichBase,
+            institution: ''
         };
 
         term.value = '';
@@ -26,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let result = await _findInLattes(search);
         _contentRender(result);
 
-    }
+    }; 
 
 });
 
@@ -38,6 +39,19 @@ const _findInLattes = (searchObj) => {
     };
 
     return fetch('/api/v1/search', headers)
+        .then(res => res.json())
+        .then(res => res)
+        .catch(err => console.log(err));
+}
+
+const _findByLattesId = (id) => {
+    const headers = { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ id: id }) 
+    };
+
+    return fetch('/api/v1/resume-detail', headers)
         .then(res => res.json())
         .then(res => res)
         .catch(err => console.log(err));
@@ -83,7 +97,7 @@ const _contentRender = (resultObj) => {
                             <li>${ line }</li>
                         ` : '' ).join('') }
                         </ul>
-                        <a href="${ person.link }" class="btn btn-outline-secondary btn-sm mt-2" target="_blank">Currículo</a>
+                        <a data-lattes-id="${ person.lattesId }" class="btn btn-outline-secondary btn-sm btn-lattes-detail mt-2">Detalhes</a>
                     </div>
                 </div>
             </li>`
@@ -92,7 +106,26 @@ const _contentRender = (resultObj) => {
 
     reciver.innerHTML = content;
 
+    const links = reciver.querySelectorAll('[data-lattes-id]');
+
+    Array.prototype.filter.call(links, function(link) {
+
+        link.addEventListener('click', async function (e) { 
+            e.preventDefault();
+
+            _loader().show();
+            _toTop();
+
+            let result = await _findByLattesId(link.dataset.lattesId);
+            _renderResumeDetail(result);
+        })
+    })
+
     _loader().hide();
+}
+
+const _renderResumeDetail = (resumeObj) => {
+    console.log(resumeObj);
 }
 
 const _paginatorRender = (pages) => {
