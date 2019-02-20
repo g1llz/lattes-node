@@ -1,20 +1,10 @@
 const puppeteer = require('puppeteer');
+const setBaseUrl = require('./helper/base-url');
 
 const scrape = async (search) => {   
     const { page, browser } = await _init();
-
-    await page.goto('http://buscatextual.cnpq.br/buscatextual/busca.do?metodo=apresentar');
-
-    // if true search by subject (title or key word); if false search only by name
-    search.searchFor == 2 && await page.click('input[id=buscaAssunto]');
-
-    await page.waitForSelector('input[id=textoBusca]');
-    await page.type('input[id=textoBusca]', search.term);
     
-    // if true search in all bases; if false search only PhDs
-    search.whichBase == 2 && await page.click('input[id=buscarDemais]');
-    
-    await page.click('a[id=botaoBuscaFiltros]');
+    await page.goto(await setBaseUrl(search));
     await page.waitForSelector('div[class=resultado]');
 
     const numRegisters = await page.$eval('div.tit_form b', element => element.innerText);
@@ -40,7 +30,6 @@ const scrape = async (search) => {
 }
 
 const scrapeNextPage = async (url) => {
-    // const persons = [];
     const { page, browser } = await _init();
 
     await page.goto(url, { waitUntil: 'load' });
@@ -50,6 +39,20 @@ const scrapeNextPage = async (url) => {
 
     return { persons: result };
 
+}
+
+const scrapeResume = async (id) => {
+    const { page, browser } = await _init();
+    const url = `http://buscatextual.cnpq.br/buscatextual/visualizacv.do?id=${ id }`;
+
+    await page.goto(url, { waitUntil: 'load' });
+    await page.waitForSelector('div[class=layout-cell-pad-main]');
+    
+    let result = await _contentResume(page);
+
+    browser.close();
+
+    return { person: result };
 }
 
 const _init = async () => {
@@ -71,13 +74,40 @@ const _content = async (context) => {
                 name: data.textContent,
                 country: item.contains(item.querySelector('img')) ? 
                     item.querySelector('img').getAttribute('alt') : '',
-                link: `http://buscatextual.cnpq.br/buscatextual/visualizacv.do?id=${ href.slice(24, href.indexOf(',')-1) }`,
+                lattesId: href.slice(24, href.indexOf(',')-1),
                 resume: (item.innerText).split('\n').filter(Boolean)
             };
         });            
     });
 
 }
+
+const _contentResume = async (context) => {
+
+    const targets = ['Identificação', 'Endereço', 'Linhas de pesquisa', 'Áreas de atuação'];
+
+    return (await context.evaluate(() => {
+        const main = document.body.querySelector('.layout-cell-pad-main');
+        const nodeList = main.querySelectorAll('div[class=title-wrapper]');
+        return Array.from(nodeList).map(item => {
+
+            let data = item.querySelector('.data-cell');
+            let cell = data ? data.querySelectorAll('.layout-cell-pad-5') : []; 
+            
+            return {
+                section: item.querySelector('a') ? item.querySelector('a').innerText : '',
+                dataCell: Array.from(cell).map(item => item.innerText)
+            }
+        });     
+    })).filter(item => targets.includes(item.section));    
+
+}
+ 
+// (xyz.map((item, i) => {
+//     if (i%2==0) {
+//         return {[item]: xyz[i+1]}	
+//     }
+// })).filter(item => item)
 
 const _generateLinks = (referenceURL, numRegisters) => {
     let result = [];
@@ -90,4 +120,4 @@ const _generateLinks = (referenceURL, numRegisters) => {
     return result;
 }
 
-module.exports = { scrape, scrapeNextPage };
+module.exports = { scrape, scrapeNextPage, scrapeResume };
