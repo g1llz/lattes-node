@@ -1,34 +1,36 @@
 const cors = require('cors');
-const { scrape, scrapeNextPage, scrapeResume } = require('../service/scraping');
+const run = require('../service/scraping');
 
-const routes = (app) => {
+const routes = app => {
     
     // app.use(cors());
     // app.options('*', cors());
 
-    app.get('/', (req, res) => {
+    app.get('/', (req, res) => {       
         res.render('index.html');
     });
 
     app.post('/api/v1/search', async (req, res) => {
         const { search } = req.body;
         try {
-            res.json(await scrape(search)
-                .then((res) => res)
+            res.json(await run.scrape(search)
+                .then((res) => {
+                    return res;
+                })
                 .catch(err => console.log(err)));
         } catch (error) {
-            res.json(404, error);
+            res.status(404).json(error);
         }
     });
     
     app.post('/api/v1/next-page', async (req, res) => {
         const { url } = req.body;
         try {
-            res.json(await scrapeNextPage(url)
+            res.json(await run.scrapeNextPage(url)
                 .then((res) => res)
                 .catch(err => console.log(err)));
         } catch (error) {
-            res.json(404, error);
+            res.status(404).json(error);
         }
     });
 
@@ -36,13 +38,14 @@ const routes = (app) => {
         const { id } = req.body;
         console.log(id);
         try {
-            res.json(await scrapeResume(id)
+            res.json(await run.scrapeResume(id)
                 .then((res) => res)
                 .catch(err => console.log(err)));
         } catch (error) {
-            res.json(404, error);
+            res.status(404).json(error);
         }
     });
+    
 }
 
 module.exports = routes;
