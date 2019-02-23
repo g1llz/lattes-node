@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     const button = document.querySelector('#btn-search');
     const term = document.querySelector('#term');
     
@@ -97,7 +97,8 @@ const _contentRender = (resultObj) => {
                             <li>${ line }</li>
                         ` : '' ).join('') }
                         </ul>
-                        <a data-lattes-id="${ person.lattesId }" class="btn btn-outline-secondary btn-sm btn-lattes-detail mt-2">Detalhes</a>
+                        <a href="http://buscatextual.cnpq.br/buscatextual/preview.do?id=${ person.lattesId }" class="btn btn-outline-secondary btn-sm btn-lattes-detail mt-2" target="_blank">Preview</a>
+                        <a href="http://buscatextual.cnpq.br/buscatextual/visualizacv.do?id=${ person.lattesId }" class="btn btn-outline-secondary btn-sm btn-lattes-detail mt-2 ml-2" target="_blank">Currículo</a>
                     </div>
                 </div>
             </li>`
