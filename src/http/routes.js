@@ -3,12 +3,8 @@ const run = require('../service/scraping');
 
 const routes = app => {
     
-    // app.use(cors());
-    // app.options('*', cors());
-
-    app.get('/', (req, res) => {       
-        res.render('index.html');
-    });
+    app.use(cors());
+    app.options('*', cors());
 
     app.post('/api/v1/search', async (req, res) => {
         const { search } = req.body;
