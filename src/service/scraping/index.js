@@ -18,10 +18,10 @@ const scrape = async (search) => {
         const targetList = await _generateLinks(referenceURL, ~~numRegisters);
 
         await page.goto(targetList[0], { waitUntil: 'load' });
-        result = { persons: await _content(page), pages: targetList };
+        result = { total: numRegisters, persons: await _content(page), pages: targetList };
         
     } else {
-        result = { persons: await _content(page) };
+        result = { total: numRegisters, persons: await _content(page) };
     }
 
     browser.close();
