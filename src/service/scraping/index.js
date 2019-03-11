@@ -21,7 +21,11 @@ const scrape = async (search) => {
         result = { total: numRegisters, persons: await _content(page), pages: targetList };
         
     } else {
-        result = { total: numRegisters, persons: await _content(page) };
+        if (isNaN(numRegisters)) { 
+            result = { total: '0', persons: [] };
+        } else {
+            result = { total: numRegisters, persons: await _content(page) };
+        }
     }
 
     browser.close();
@@ -73,7 +77,7 @@ const _content = async (context) => {
             return {
                 name: data.textContent,
                 country: item.contains(item.querySelector('img')) ? 
-                    item.querySelector('img').getAttribute('alt') : '',
+                    item.querySelector('img').getAttribute('src') : '',
                 lattesId: href.slice(24, href.indexOf(',')-1),
                 resume: (item.innerText).split('\n').filter(Boolean)
             };
